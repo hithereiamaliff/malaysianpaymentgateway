@@ -4,9 +4,9 @@ A React component library for integrating Malaysian payment methods into your we
 
 *Note: Credit/debit card payment with Visa/Mastercard support is coming soon.*
 
-See this in action 👉🏻 [https://mynameisaliff.co.uk/donate](https://mynameisaliff.co.uk/donate)
+See this in action 👉🏻 [https://mynameisaliff.co.uk](https://mynameisaliff.co.uk) <--- (Scroll to the bottom to "Let's Connect", and click "❤️ Support My Work")
 
-If you like what you've seen there, do consider making a contribution so I can improvise this component along with other web apps and sites I've built :)
+If you like what you've seen in that component, do consider making a contribution there so I can improvise this component along with other web apps and sites I've built :)
 
 ## Features
 

@@ -13,9 +13,24 @@ A React component library for integrating Malaysian payment methods into your we
 ## Installation
 
 ```bash
-npm install malaysian-payment-gateway
+# Clone the repository
+git clone https://github.com/hithereiamaliff/malaysianpaymentgateway.git
+
+# Navigate to the project directory
+cd malaysianpaymentgateway
+
+# Install TypeScript and type definitions
+npm install typescript @types/react @types/react-dom @types/react-helmet
+
+# Install dependencies
+npm install
 # or
-yarn add malaysian-payment-gateway
+yarn install
+
+# Build the package
+npm run build
+# or
+yarn build
 ```
 
 ## Usage
@@ -105,16 +120,18 @@ You can customize the appearance of the components by providing your own styling
 
 ## Analytics Integration
 
-The components are pre-configured to work with Google Analytics 4:
+The components are pre-configured to work with Google Analytics 4. You need to initialize GA4 in your application:
 
 ```jsx
 import ReactGA from 'react-ga4';
 
-// Initialize GA4
+// Initialize GA4 with your tracking ID
 ReactGA.initialize('G-XXXXXXXXXX');
 
 // The components will automatically track events
 ```
+
+Note: The library does not initialize Google Analytics internally. You must initialize it in your application with your own tracking ID.
 
 ## Available Components
 

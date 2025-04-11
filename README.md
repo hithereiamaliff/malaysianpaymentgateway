@@ -1,0 +1,129 @@
+# Malaysian Payment Gateway
+
+A React component library for integrating Malaysian payment methods into your web applications. This library provides a simple and customizable way to add DuitNow Transfer, DuitNow QR, and Touch 'n Go eWallet payment options to your React applications.
+
+## Features
+
+- 🇲🇾 **Malaysian-focused**: Optimized for Malaysian payment methods
+- 📱 **Mobile-friendly**: Properly handles app opening on both iOS and Android devices
+- 🎨 **Customizable**: Easy to style and adapt to your application's design
+- 📊 **Analytics-ready**: Includes Google Analytics 4 integration
+- 🌏 **International support**: Includes support for international payment apps
+
+## Installation
+
+```bash
+npm install malaysian-payment-gateway
+# or
+yarn add malaysian-payment-gateway
+```
+
+## Usage
+
+### Basic Usage
+
+```jsx
+import React from 'react';
+import { PaymentButton, PaymentModal } from 'malaysian-payment-gateway';
+
+function App() {
+  const [showModal, setShowModal] = React.useState(false);
+
+  return (
+    <div>
+      <PaymentButton onClick={() => setShowModal(true)} />
+      
+      {showModal && (
+        <PaymentModal 
+          onClose={() => setShowModal(false)}
+        />
+      )}
+    </div>
+  );
+}
+```
+
+### Standalone Payment Page
+
+You can also create a standalone payment page using the components:
+
+```jsx
+import React from 'react';
+import { DuitNowTransfer, DuitNowQR, TNGEWallet } from 'malaysian-payment-gateway';
+
+function PaymentPage() {
+  const [selectedMethod, setSelectedMethod] = React.useState(null);
+
+  return (
+    <div>
+      <h1>Payment Methods</h1>
+      
+      {selectedMethod === null ? (
+        <div>
+          <button onClick={() => setSelectedMethod('duitnow-transfer')}>
+            DuitNow Transfer
+          </button>
+          <button onClick={() => setSelectedMethod('duitnow-qr')}>
+            DuitNow QR
+          </button>
+          <button onClick={() => setSelectedMethod('tng-ewallet')}>
+            Touch 'n Go eWallet
+          </button>
+        </div>
+      ) : (
+        <div>
+          {selectedMethod === 'duitnow-transfer' && <DuitNowTransfer />}
+          {selectedMethod === 'duitnow-qr' && <DuitNowQR />}
+          {selectedMethod === 'tng-ewallet' && <TNGEWallet />}
+          
+          <button onClick={() => setSelectedMethod(null)}>
+            Back to payment methods
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## Customization
+
+You can customize the appearance of the components by providing your own styling:
+
+```jsx
+<PaymentButton 
+  className="custom-button-class"
+  buttonText="Support My Work"
+/>
+
+<PaymentModal
+  className="custom-modal-class"
+  title="Custom Title"
+  subtitle="Custom subtitle text here"
+/>
+```
+
+## Analytics Integration
+
+The components are pre-configured to work with Google Analytics 4:
+
+```jsx
+import ReactGA from 'react-ga4';
+
+// Initialize GA4
+ReactGA.initialize('G-XXXXXXXXXX');
+
+// The components will automatically track events
+```
+
+## Available Components
+
+- `PaymentButton`: Button to trigger the payment modal
+- `PaymentModal`: Modal with payment method selection
+- `DuitNowTransfer`: Component for DuitNow Transfer payment method
+- `DuitNowQR`: Component for DuitNow QR payment method
+- `TNGEWallet`: Component for Touch 'n Go eWallet payment method
+
+## License
+
+MIT © [Your Name]

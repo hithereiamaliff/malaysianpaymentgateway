@@ -1,0 +1,47 @@
+{
+  "name": "malaysian-payment-gateway",
+  "version": "1.0.0",
+  "description": "A React component library for integrating Malaysian payment methods into web applications",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "payment",
+    "malaysia",
+    "duitnow",
+    "qr",
+    "ewallet",
+    "react",
+    "component"
+  ],
+  "author": "Aliff",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": "^17.0.0 || ^18.0.0",
+    "react-dom": "^17.0.0 || ^18.0.0"
+  },
+  "dependencies": {
+    "react-ga4": "^2.1.0",
+    "react-helmet": "^6.1.0",
+    "framer-motion": "^10.16.4",
+    "react-router-dom": "^6.16.0",
+    "lucide-react": "^0.284.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "@types/react-helmet": "^6.1.6",
+    "typescript": "^4.9.5",
+    "jest": "^29.0.0",
+    "@testing-library/react": "^14.0.0",
+    "@testing-library/jest-dom": "^6.0.0"
+  },
+  "files": [
+    "dist",
+    "assets"
+  ]
+}

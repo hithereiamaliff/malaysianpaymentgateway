@@ -2,6 +2,12 @@
 
 A React component library for integrating Malaysian payment methods into your web applications. This library provides a simple and customizable way to add DuitNow Transfer, DuitNow QR, and Touch 'n Go eWallet payment options to your React applications.
 
+*Note: Credit/debit card payment with Visa/Mastercard support is coming soon.*
+
+See this in action 👉🏻 [https://mynameisaliff.co.uk/donate](https://mynameisaliff.co.uk/donate)
+
+If you like what you've seen there, do consider making a contribution so I can improvise this component along with other web apps and sites I've built :)
+
 ## Features
 
 - 🇲🇾 **Malaysian-focused**: Optimized for Malaysian payment methods

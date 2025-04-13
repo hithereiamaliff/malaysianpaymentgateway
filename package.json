@@ -16,13 +16,18 @@
     "qr",
     "ewallet",
     "react",
-    "component"
+    "component",
+    "stripe",
+    "credit-card",
+    "cambodia"
   ],
   "author": "Aliff",
   "license": "MIT",
   "peerDependencies": {
     "react": "^17.0.0 || ^18.0.0",
-    "react-dom": "^17.0.0 || ^18.0.0"
+    "react-dom": "^17.0.0 || ^18.0.0",
+    "@stripe/react-stripe-js": "^2.1.0",
+    "@stripe/stripe-js": "^1.54.0"
   },
   "dependencies": {
     "react-ga4": "^2.1.0",

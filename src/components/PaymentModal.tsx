@@ -1,9 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, ArrowRight, ArrowLeft } from 'lucide-react';
-import { DuitNowTransfer, DuitNowQR, TNGEWallet } from './components';
+import { DuitNowTransfer, DuitNowQR, TNGEWallet, StripePayment } from './components';
 import ReactGA from 'react-ga4';
 
-export type DonationMethod = 'duitnow-transfer' | 'duitnow-qr' | 'tng-ewallet';
+// Feature flags interface
+export interface FeatureFlags {
+  STRIPE_PAYMENT: boolean;
+  CAMBODIAN_PAYMENT_APPS: boolean;
+}
+
+// Default feature flags
+const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
+  STRIPE_PAYMENT: false,
+  CAMBODIAN_PAYMENT_APPS: false
+};
+
+// Helper function to check if a feature flag is enabled
+export const hasFeatureFlag = (flag: keyof FeatureFlags): boolean => {
+  // Check if window exists (for SSR compatibility)
+  if (typeof window === 'undefined') return false;
+  
+  try {
+    const flags = JSON.parse(localStorage.getItem('featureFlags') || JSON.stringify(DEFAULT_FEATURE_FLAGS));
+    return flags[flag] === true;
+  } catch (e) {
+    console.error('Error parsing feature flags:', e);
+    return false;
+  }
+};
+
+export type DonationMethod = 'duitnow-transfer' | 'duitnow-qr' | 'tng-ewallet' | 'stripe';
 
 interface DonationModalProps {
   isOpen: boolean;
@@ -12,6 +38,12 @@ interface DonationModalProps {
 
 export function DonationModal({ isOpen, onClose }: DonationModalProps) {
   const [selectedMethod, setSelectedMethod] = useState<DonationMethod | null>(null);
+  const [showStripe, setShowStripe] = useState<boolean>(false);
+  
+  // Check if Stripe feature flag is enabled
+  useEffect(() => {
+    setShowStripe(hasFeatureFlag('STRIPE_PAYMENT'));
+  }, []);
 
   // Track modal open event
   React.useEffect(() => {
@@ -118,6 +150,26 @@ export function DonationModal({ isOpen, onClose }: DonationModalProps) {
                   </div>
                   <ArrowRight className="h-5 w-5 text-yellow-500" />
                 </button>
+                
+                {showStripe && (
+                  <button
+                    onClick={() => handleMethodSelect('stripe')}
+                    className="w-full p-4 bg-gray-800/50 hover:bg-gray-800/70 rounded-lg text-left transition-colors flex items-center"
+                  >
+                    <div className="w-12 h-12 mr-4 flex-shrink-0 bg-white rounded-lg p-1 flex items-center justify-center">
+                      <img 
+                        src="/images/Credit Debit Payment Logo/VisaMastercard logo.png" 
+                        alt="Visa/Mastercard" 
+                        className="max-w-full max-h-full object-contain"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-white font-medium">Credit/Debit Card</h3>
+                      <p className="text-gray-400 text-sm">Pay with Visa or Mastercard</p>
+                    </div>
+                    <ArrowRight className="h-5 w-5 text-yellow-500" />
+                  </button>
+                )}
               </div>
             </>
           ) : (
@@ -125,6 +177,7 @@ export function DonationModal({ isOpen, onClose }: DonationModalProps) {
               {selectedMethod === 'duitnow-transfer' && <DuitNowTransfer />}
               {selectedMethod === 'duitnow-qr' && <DuitNowQR />}
               {selectedMethod === 'tng-ewallet' && <TNGEWallet />}
+              {selectedMethod === 'stripe' && showStripe && <StripePayment />}
               
               <div className="mt-6 pt-4 border-t border-gray-800">
                 <button

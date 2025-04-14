@@ -14,7 +14,7 @@ If you like what you've seen in that component, do consider making a contributio
 - 📱 **Mobile-friendly**: Properly handles app opening on both iOS and Android devices
 - 🎨 **Customizable**: Easy to style and adapt to your application's design
 - 📊 **Analytics-ready**: Includes Google Analytics 4 integration
-- 🌏 **International support**: Includes support for international payment apps from Philippines, Indonesia, Singapore, Thailand, Cambodia, and more
+- 🌏 **International support**: Includes support for Mastercard/Visa card payments and bank/eWallet apps from China, Indonesia, Singapore, Thailand, and many more
 - 💳 **Stripe integration**: Process credit/debit card payments with Visa and Mastercard
 - 🚩 **Feature flags**: Enable/disable features like Stripe payments and international apps
 
@@ -168,6 +168,67 @@ if (hasFeatureFlag('STRIPE_PAYMENT')) {
   // Stripe payment is enabled
 }
 ```
+
+## International Payment Options
+
+The library supports payment apps from multiple countries. Here's how to use the international payment options:
+
+```jsx
+import React, { useState } from 'react';
+import { DuitNowQR } from 'malaysian-payment-gateway';
+
+function InternationalPaymentExample() {
+  const [selectedCountry, setSelectedCountry] = useState('');
+  
+  // List of supported countries
+  const countries = [
+    'Cambodia',
+    'China',
+    'Hong Kong',
+    'Indonesia',
+    'Philippines',
+    'Mongolia',
+    'Macau',
+    'Singapore',
+    'South Korea',
+    'Thailand'
+  ];
+
+  return (
+    <div className="payment-container">
+      <h2>International Payment Options</h2>
+      
+      {/* Country selector */}
+      <div className="country-selector">
+        <label htmlFor="country-select">Select a country:</label>
+        <select 
+          id="country-select"
+          value={selectedCountry}
+          onChange={(e) => setSelectedCountry(e.target.value)}
+        >
+          <option value="">-- Select Country --</option>
+          {countries.map(country => (
+            <option key={country} value={country}>{country}</option>
+          ))}
+        </select>
+      </div>
+      
+      {/* The DuitNowQR component will display payment apps for the selected country */}
+      <DuitNowQR />
+      
+      {/* You can also implement your own UI to display international payment options */}
+      {selectedCountry && (
+        <div className="custom-international-payments">
+          <h3>{selectedCountry} Payment Options</h3>
+          {/* Implement your custom UI here */}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+The `DuitNowQR` component includes a country selector dropdown by default, allowing users to choose payment apps from different countries.
 
 ## Stripe Integration Guide
 

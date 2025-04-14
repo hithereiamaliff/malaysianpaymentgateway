@@ -550,7 +550,7 @@ type PaymentApp = {
 };
 
 // Define country names as a union type for type safety
-type CountryName = 'China' | 'Hong Kong' | 'Indonesia' | 'Philippines' | 'Mongolia' | 'Macau' | 'Singapore' | 'South Korea' | 'Thailand';
+type CountryName = 'Cambodia' | 'China' | 'Hong Kong' | 'Indonesia' | 'Philippines' | 'Mongolia' | 'Macau' | 'Singapore' | 'South Korea' | 'Thailand';
 
 // Define countries type with specific keys
 type CountryApps = {
@@ -559,6 +559,10 @@ type CountryApps = {
 
 // International Payment Apps organized by country
 const INTERNATIONAL_APPS_BY_COUNTRY: CountryApps = {
+  'Cambodia': [
+    { name: 'Bakong', appUrl: 'bakong://', iosAppUrl: 'bakong://', androidAppUrl: 'bakong://', icon: '/images/DuitNow QR International Apps Logo/32 bakong.png', iosAppStoreUrl: 'https://apps.apple.com/kh/app/bakong/id1440829141', androidPlayStoreUrl: 'https://play.google.com/store/apps/details?id=jp.co.soramitsu.bakong&hl=en', webUrl: 'https://bakong.nbc.gov.kh' },
+    { name: 'Maybank2u KH', appUrl: 'maybank2ukh://', iosAppUrl: 'maybank2ukh://', androidAppUrl: 'maybank2ukh://', icon: '/images/DuitNow QR International Apps Logo/33 maybank2u kh.webp', iosAppStoreUrl: 'https://apps.apple.com/kh/app/maybank2u-kh/id6479514715', androidPlayStoreUrl: 'https://play.google.com/store/apps/details?id=com.maybank2u.mayakh&hl=en', webUrl: 'https://www.maybank2u.com.kh/en/personal/eservice/QRPay.page' },
+  ],
   'China': [
     { name: 'Alipay', appUrl: 'alipays://', iosAppUrl: 'alipays://', androidAppUrl: 'alipays://', icon: '/images/DuitNow QR International Apps Logo/1 alipay.webp', iosAppStoreUrl: 'https://apps.apple.com/cn/app/alipay-simplify-your-life/id333206289', androidPlayStoreUrl: 'https://play.google.com/store/apps/details?id=com.eg.android.AlipayGphone&hl=en', webUrl: 'https://www.alipay.com' },
   ],

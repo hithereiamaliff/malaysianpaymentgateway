@@ -625,7 +625,30 @@ import { ExpressCheckoutElement } from '@stripe/react-stripe-js';
 />
 ```
 
-**Note**: Apple Pay requires HTTPS and domain verification. Google Pay works in test mode without additional setup.
+**Apple Pay Domain Verification Required**:
+
+Apple Pay requires your domain to be verified with Apple through Stripe before it will appear as a payment option:
+
+1. Go to [Stripe Dashboard > Settings > Payment Methods](https://dashboard.stripe.com/settings/payment_methods)
+2. Click on **Apple Pay** 
+3. Click **Add Domain** under "Web Domains"
+4. Enter your production domain (e.g., `mynameisaliff.co.uk`)
+5. Download the verification file provided by Stripe
+6. Host the verification file at: `https://yourdomain.com/.well-known/apple-developer-merchantid-domain-association`
+7. Click **Verify** in Stripe Dashboard
+
+**For Netlify/Static Hosting**:
+- Place the file in your `public/.well-known/` directory
+- Ensure your build process copies it to the output directory
+- The file should be accessible without authentication
+
+**Testing Apple Pay**:
+- Must use Safari browser on iOS/macOS
+- Must have Apple Pay set up in Wallet with at least one card
+- Must be on HTTPS (localhost works for testing)
+- Domain verification is required for production
+
+**Google Pay**: Works in test mode without additional setup.
 
 ### Stripe Webhooks (Recommended for Production)
 

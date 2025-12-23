@@ -2,11 +2,24 @@
 
 A React component library for integrating Malaysian payment methods into your web applications. This library provides a simple and customizable way to add DuitNow Transfer, DuitNow QR, Touch 'n Go eWallet, and Stripe payment options to your React applications.
 
-✅ **NEW**: Credit/debit card payment with Visa/Mastercard support via Stripe is now available!
+✅ **NEW**: Full Stripe integration with multiple payment methods:
+- **Credit/Debit Cards** (Visa, Mastercard)
+- **FPX** (Malaysian bank account holders only)
+- **GrabPay** (Available in Malaysia and Singapore)
+- **Apple Pay** & **Google Pay** (Express Checkout)
 
-See this in action 👉🏻 [https://mynameisaliff.co.uk](https://mynameisaliff.co.uk) <--- (Scroll to the bottom to "Let's Connect", and click "❤️ Support My Work")
+See this in action 👉🏻 [https://mynameisaliff.co.uk/donate](https://mynameisaliff.co.uk/donate)
 
 If you like what you've seen in that component, do consider making a contribution there so I can improvise this component along with other web apps and sites I've built :)
+
+## ⚠️ Important: Backend Requirement
+
+**This library requires a self-hosted backend server to function.** The Stripe payment components need backend endpoints to:
+- Provide the Stripe publishable key
+- Create payment intents
+- Handle webhook events (optional but recommended)
+
+You must create your own backend following the API specifications below.
 
 ## Features
 
@@ -15,7 +28,8 @@ If you like what you've seen in that component, do consider making a contributio
 - 🎨 **Customizable**: Easy to style and adapt to your application's design
 - 📊 **Analytics-ready**: Includes Google Analytics 4 integration
 - 🌏 **International support**: Includes support for Mastercard/Visa card payments and bank/eWallet apps from China, Indonesia, Singapore, Thailand, and many more
-- 💳 **Stripe integration**: Process credit/debit card payments with Visa and Mastercard
+- 💳 **Stripe integration**: Full payment processing with Card, FPX (Malaysian Online Banking), GrabPay, Apple Pay, and Google Pay
+- 🍎 **Express Checkout**: Apple Pay and Google Pay support for faster payments
 - 🚩 **Feature flags**: Enable/disable features like Stripe payments and international apps
 
 ## Installation
@@ -234,62 +248,147 @@ The `DuitNowQR` component includes a country selector dropdown by default, allow
 
 This library includes a complete Stripe payment integration with a two-step payment flow:
 
-1. **Amount Selection**: Users first select a donation amount (preset or custom)
-2. **Payment Processing**: After amount selection, users enter their payment details
+#### Required Backend Endpoints
 
-### Backend Requirements
+Your backend must implement these three endpoints:
 
-To use the Stripe integration, you'll need to set up a backend with the following endpoints:
-
-#### Option 1: Express.js Backend
-
+**1. GET `/api/stripe-config`** - Returns Stripe publishable key
 ```javascript
-// Required environment variables:
-// - STRIPE_PUBLISHABLE_KEY
-// - STRIPE_SECRET_KEY
-
-const express = require('express');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const app = express();
-
-// Endpoint to get Stripe publishable key
 app.get('/api/stripe-config', (req, res) => {
-  res.json({ publishableKey: process.env.STRIPE_PUBLISHABLE_KEY });
-});
-
-// Endpoint to create a payment intent
-app.post('/api/create-payment-intent', async (req, res) => {
-  try {
-    const { amount, currency = 'myr' } = req.body;
-    
-    // Create a PaymentIntent with the order amount and currency
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Convert to cents/smallest currency unit
-      currency: currency,
-      automatic_payment_methods: {
-        enabled: true,
-      },
-    });
-
-    res.json({
-      clientSecret: paymentIntent.client_secret,
-    });
-  } catch (error) {
-    console.error('Error creating payment intent:', error);
-    res.status(500).json({ error: error.message });
-  }
+  res.json({ 
+    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY 
+  });
 });
 ```
 
-#### Option 2: Netlify Functions
+**2. POST `/api/create-payment-intent`** - Creates a payment intent
+```javascript
+app.post('/api/create-payment-intent', async (req, res) => {
+  const { amount, currency = 'myr' } = req.body;
+  
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: Math.round(amount), // Amount in smallest currency unit (cents/sen)
+    currency,
+    payment_method_types: ['card', 'fpx', 'grabpay'], // For MYR
+    metadata: {
+      type: 'donation',
+      source: 'website'
+    }
+  });
+  
+  res.json({ 
+    clientSecret: paymentIntent.client_secret 
+  });
+});
+```
 
-Create the following files in your Netlify Functions directory:
+**3. POST `/api/webhook`** - Handles Stripe webhook events (optional)
+```javascript
+app.post('/api/webhook', express.raw({type: 'application/json'}), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  const event = stripe.webhooks.constructEvent(
+    req.body, 
+    sig, 
+    process.env.STRIPE_WEBHOOK_SECRET
+  );
+  
+  // Handle events like payment_intent.succeeded
+  res.json({received: true});
+});
+```
 
-**stripe-config.js**:
+#### Complete Backend Example
+
+Here's a complete Express.js backend implementation:
+
+```javascript
+const express = require('express');
+const cors = require('cors');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const rateLimit = require('express-rate-limit');
+
+const app = express();
+
+// CORS configuration
+app.use(cors({
+  origin: process.env.CLIENT_URL,
+  methods: ['POST', 'GET', 'OPTIONS'],
+  credentials: true
+}));
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100
+});
+app.use(limiter);
+
+app.use(express.json());
+
+// Get Stripe publishable key
+app.get('/api/stripe-config', (req, res) => {
+  res.json({ 
+    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY 
+  });
+});
+
+// Create payment intent
+app.post('/api/create-payment-intent', async (req, res) => {
+  const { amount, currency = 'myr' } = req.body;
+  
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: Math.round(amount),
+    currency,
+    payment_method_types: ['card', 'fpx', 'grabpay'],
+    metadata: {
+      type: 'donation',
+      source: 'website'
+    }
+  });
+  
+  res.json({ clientSecret: paymentIntent.client_secret });
+});
+
+// Webhook handler
+app.post('/api/webhook', 
+  express.raw({type: 'application/json'}), 
+  async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    const event = stripe.webhooks.constructEvent(
+      req.body, 
+      sig, 
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+    
+    // Handle events
+    if (event.type === 'payment_intent.succeeded') {
+      console.log('Payment succeeded:', event.data.object.id);
+    }
+    
+    res.json({received: true});
+  }
+);
+
+app.listen(3001, () => console.log('Server running on port 3001'));
+```
+
+**Recommended Features**:
+- Origin verification (CORS protection)
+- Rate limiting
+- Multiple payment methods (Card, FPX, GrabPay)
+- Webhook handling
+- Docker deployment support
+
+#### Alternative: Netlify Functions
+
+If you prefer serverless deployment, you can use Netlify Functions:
+
+**netlify/functions/stripe-config.js**:
 ```javascript
 exports.handler = async function() {
   return {
     statusCode: 200,
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       publishableKey: process.env.STRIPE_PUBLISHABLE_KEY
     })
@@ -297,36 +396,27 @@ exports.handler = async function() {
 };
 ```
 
-**create-payment-intent.js**:
+**netlify/functions/create-payment-intent.js**:
 ```javascript
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 exports.handler = async function(event) {
-  try {
-    const { amount, currency = 'myr' } = JSON.parse(event.body);
-    
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100),
-      currency: currency,
-      automatic_payment_methods: {
-        enabled: true,
-      },
-    });
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        clientSecret: paymentIntent.client_secret
-      })
-    };
-  } catch (error) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: error.message })
-    };
-  }
+  const { amount, currency = 'myr' } = JSON.parse(event.body);
+  
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: Math.round(amount),
+    currency,
+    payment_method_types: ['card', 'fpx', 'grabpay']
+  });
+  
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ clientSecret: paymentIntent.client_secret })
+  };
 };
 ```
+
+**Note**: Netlify Functions have cold start delays. For better performance, consider using a dedicated backend server.
 
 ### Frontend Implementation
 
@@ -334,15 +424,17 @@ The StripePayment component will automatically handle:
 
 1. Fetching the Stripe publishable key from your backend
 2. Creating a payment intent when an amount is selected
-3. Rendering the payment form with Stripe Elements
-4. Processing the payment and showing success/error messages
-5. Animated success confirmation with checkmark animation
-6. Responsive design for mobile and desktop devices
+3. Rendering Express Checkout (Apple Pay/Google Pay) when available
+4. Rendering PaymentElement with Card, FPX, and GrabPay tabs
+5. Processing the payment and handling redirects (for FPX/GrabPay)
+6. Animated success confirmation with checkmark animation
+7. Responsive design for mobile and desktop devices
 
-### Test Cards
+### Test Payment Methods
 
-Use these test card numbers for development:
+Use these test credentials for development:
 
+#### Test Cards
 - **Success**: 4242 4242 4242 4242
 - **Requires Authentication**: 4000 0025 0000 3155
 - **Declined**: 4000 0000 0000 0002
@@ -352,54 +444,119 @@ For all test cards, use:
 - Any 3-digit CVC
 - Any postal code
 
+#### Test FPX
+In test mode, select any bank from the FPX dropdown. You'll be redirected to a test page where you can simulate success or failure.
+
+#### Test GrabPay
+In test mode, GrabPay will redirect to a test page where you can simulate the payment result.
+
 ### Environment Variables
 
-You'll need to set these environment variables:
+#### Backend Environment Variables
 
+Your backend server needs:
+
+```bash
+# Stripe Keys (get from https://dashboard.stripe.com/apikeys)
+STRIPE_PUBLISHABLE_KEY=pk_test_51...  # Safe to expose to frontend
+STRIPE_SECRET_KEY=sk_test_51...       # NEVER expose to frontend
+STRIPE_WEBHOOK_SECRET=whsec_...       # For webhook signature verification
+
+# CORS Configuration
+CLIENT_URL=http://localhost:5173      # Your frontend URL
+
+# Server Configuration
+PORT=3001                              # Backend server port
 ```
-STRIPE_PUBLISHABLE_KEY=pk_test_your_key
-STRIPE_SECRET_KEY=sk_test_your_key
-STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+
+#### Frontend Environment Variables
+
+Your frontend needs:
+
+```bash
+# Backend API URL
+VITE_BACKEND_URL=http://localhost:3001  # Development
+# VITE_BACKEND_URL=https://api.yourdomain.com  # Production
 ```
 
-For production, replace the test keys with live keys.
+**Security Notes**:
+- ✅ `STRIPE_PUBLISHABLE_KEY` - Safe to expose (starts with `pk_`)
+- ❌ `STRIPE_SECRET_KEY` - NEVER expose to frontend (starts with `sk_`)
+- ❌ `STRIPE_WEBHOOK_SECRET` - Keep on backend only
 
-### Multiple API Endpoints Strategy
+For production, replace test keys (`pk_test_`, `sk_test_`) with live keys (`pk_live_`, `sk_live_`).
 
-The implementation includes a fallback strategy for API endpoints to ensure reliability:
+### Backend Deployment Options
+
+You can deploy your backend using various platforms:
+
+#### Option 1: VPS with Docker (Recommended)
+
+Create a `Dockerfile` for your backend:
+
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install --production
+COPY . .
+EXPOSE 3001
+CMD ["node", "index.js"]
+```
+
+Build and run:
+```bash
+docker build -t payment-backend .
+docker run -p 3001:3001 --env-file .env payment-backend
+```
+
+**Deployment platforms**:
+- DigitalOcean Droplets
+- AWS EC2
+- Linode
+- EasyPanel (Docker orchestration)
+
+#### Option 2: Platform-as-a-Service
+
+**Railway**:
+```bash
+# Install Railway CLI
+npm i -g @railway/cli
+
+# Login and deploy
+railway login
+railway up
+```
+
+**Render**:
+- Connect your GitHub repo
+- Set environment variables in dashboard
+- Auto-deploys on push
+
+**Heroku**:
+```bash
+heroku create your-payment-backend
+git push heroku main
+```
+
+#### Option 3: Serverless (Netlify/Vercel)
+
+See the Netlify Functions example above. Note: Serverless has cold start delays.
+
+### API Endpoint Fallback Strategy
+
+The StripePayment component tries multiple endpoints automatically:
 
 ```javascript
-// Define multiple potential API endpoints in order of preference
 const apiEndpoints = [
-  // Primary backend URL from environment variable
-  `${import.meta.env.VITE_BACKEND_URL || ''}/api/stripe-config`, 
-  // Netlify Functions direct path
-  '/.netlify/functions/stripe-config',
-  // Netlify redirected path
-  '/api/stripe-config',
-  // Fallback to direct URL (if applicable)
-  'https://your-backend-url.com/api/stripe-config',
-  // Local development
-  'http://localhost:3001/api/stripe-config'
+  `${import.meta.env.VITE_BACKEND_URL}/api/stripe-config`,  // Primary
+  '/.netlify/functions/stripe-config',                      // Netlify
+  '/api/stripe-config',                                     // Proxied
+  'http://localhost:3001/api/stripe-config'                 // Local dev
 ];
-
-// Try each endpoint until one works
-let response = null;
-
-for (const endpoint of apiEndpoints) {
-  try {
-    console.log(`Attempting to fetch Stripe config from: ${endpoint}`);
-    response = await fetch(endpoint);
-    if (response.ok) {
-      console.log(`Successfully connected to: ${endpoint}`);
-      break; // Exit the loop if successful
-    }
-  } catch (err) {
-    console.warn(`Failed to connect to ${endpoint}:`, err);
-    // Continue to the next endpoint
-  }
-}
 ```
+
+This ensures the component works across different deployment scenarios.
 
 ### Analytics Integration
 
@@ -436,77 +593,179 @@ ReactGA.event({
 
 ### Express Checkout Support
 
-The implementation includes support for Express Checkout methods (Apple Pay/Google Pay):
+The implementation includes support for Express Checkout methods (Apple Pay/Google Pay) using Stripe's `ExpressCheckoutElement`:
 
-```javascript
-// Set up Payment Request for Apple Pay / Google Pay
-const pr = stripe.paymentRequest({
-  country: 'MY',
-  currency: 'myr',
-  total: {
-    label: 'Your Payment Label',
-    amount: amount * 100, // in cents
-  },
-  requestPayerName: true,
-  requestPayerEmail: false,
-});
+```jsx
+import { ExpressCheckoutElement } from '@stripe/react-stripe-js';
 
-// Check if Payment Request is available
-pr.canMakePayment().then(result => {
-  if (result) {
-    setPaymentRequest(pr);
-    setCanMakePayment(true);
-    
-    // Track that Apple Pay / Google Pay is available
-    ReactGA.event({
-      action: 'express_checkout_available',
-      category: 'donation',
+// Inside your payment form component
+<ExpressCheckoutElement
+  onConfirm={async () => {
+    // Handle express checkout confirmation
+    const { error } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: `${window.location.origin}/donate?payment_status=success`,
+      },
+      redirect: 'if_required',
     });
-  }
-});
+    
+    if (error) {
+      // Handle error
+    } else {
+      // Payment successful
+    }
+  }}
+  options={{
+    buttonType: {
+      applePay: 'donate',
+      googlePay: 'donate',
+    },
+  }}
+/>
 ```
 
-### Handling Webhooks (Optional)
+**Note**: Apple Pay requires HTTPS and domain verification. Google Pay works in test mode without additional setup.
 
-For advanced features like subscription management or payment status updates, you can implement Stripe webhooks:
+### Stripe Webhooks (Recommended for Production)
+
+Webhooks allow Stripe to notify your backend about payment events:
+
+#### 1. Set up webhook endpoint in your backend
 
 ```javascript
-// webhook.js (Netlify Function)
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-
-exports.handler = async function(event) {
-  const sig = event.headers['stripe-signature'];
-  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+app.post('/api/webhook', express.raw({type: 'application/json'}), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  let event;
   
   try {
-    const stripeEvent = stripe.webhooks.constructEvent(
-      event.body,
-      sig,
-      endpointSecret
+    event = stripe.webhooks.constructEvent(
+      req.body, 
+      sig, 
+      process.env.STRIPE_WEBHOOK_SECRET
     );
-    
-    // Handle different event types
-    switch (stripeEvent.type) {
-      case 'payment_intent.succeeded':
-        // Handle successful payment
-        break;
-      case 'payment_intent.payment_failed':
-        // Handle failed payment
-        break;
-    }
-    
-    return {
-      statusCode: 200,
-      body: JSON.stringify({received: true})
-    };
-  } catch (error) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({error: error.message})
-    };
+  } catch (err) {
+    return res.status(400).send(`Webhook Error: ${err.message}`);
   }
-};
+  
+  // Handle events
+  switch (event.type) {
+    case 'payment_intent.succeeded':
+      console.log('Payment succeeded:', event.data.object.id);
+      // Update database, send confirmation email, etc.
+      break;
+    case 'payment_intent.payment_failed':
+      console.log('Payment failed:', event.data.object.id);
+      // Notify user, log for investigation
+      break;
+  }
+  
+  res.json({received: true});
+});
 ```
+
+#### 2. Configure webhook in Stripe Dashboard
+
+1. Go to [Stripe Dashboard > Webhooks](https://dashboard.stripe.com/webhooks)
+2. Click "Add endpoint"
+3. Enter your webhook URL: `https://yourdomain.com/api/webhook`
+4. Select events to listen for:
+   - `payment_intent.succeeded`
+   - `payment_intent.payment_failed`
+   - `payment_intent.processing`
+5. Copy the webhook signing secret to your `.env` file
+
+#### 3. Test webhooks locally
+
+```bash
+# Install Stripe CLI
+brew install stripe/stripe-cli/stripe
+
+# Login to Stripe
+stripe login
+
+# Forward webhooks to local server
+stripe listen --forward-to localhost:3001/api/webhook
+
+# Trigger test events
+stripe trigger payment_intent.succeeded
+```
+
+## Payment Methods Summary
+
+| Payment Method | Type | Redirect Required | Notes | Backend Setup |
+|----------------|------|-------------------|-------|---------------|
+| Card | Direct | No | Supports 3D Secure | Enabled by default |
+| FPX | Bank Transfer | Yes | Malaysian banks only | Enable in Stripe Dashboard |
+| GrabPay | E-Wallet | Yes | Available in Malaysia and Singapore | Enable in Stripe Dashboard |
+| Apple Pay | Express | No | Requires HTTPS + domain verification | Automatic if available |
+| Google Pay | Express | No | Works in test mode | Automatic if available |
+
+### Enabling FPX and GrabPay
+
+1. Go to [Stripe Dashboard > Settings > Payment Methods](https://dashboard.stripe.com/settings/payment_methods)
+2. Enable **FPX** and **GrabPay**
+3. Complete any required verification steps
+4. Update your backend to include these methods in `payment_method_types`:
+
+```javascript
+payment_method_types: ['card', 'fpx', 'grabpay']
+```
+
+## Backend Security Best Practices
+
+### Origin Verification (CORS)
+
+Implement strict origin verification to protect your backend:
+
+```javascript
+const verifyOrigin = (req, res, next) => {
+  const origin = req.get('origin') || req.get('referer');
+  
+  if (origin) {
+    const hostname = new URL(origin).hostname;
+    
+    // Only allow your domain and localhost
+    if (
+      hostname === 'yourdomain.com' ||
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1'
+    ) {
+      return next();
+    }
+  }
+  
+  return res.status(403).json({ error: 'Access denied' });
+};
+
+// Apply to protected endpoints
+app.get('/api/stripe-config', verifyOrigin, (req, res) => { ... });
+app.post('/api/create-payment-intent', verifyOrigin, (req, res) => { ... });
+```
+
+### Rate Limiting
+
+```javascript
+const rateLimit = require('express-rate-limit');
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+});
+
+app.use(limiter);
+```
+
+### Key Security Rules
+
+- ❌ **NEVER** expose `STRIPE_SECRET_KEY` in frontend code
+- ❌ **NEVER** commit `.env` files to Git
+- ✅ Use environment variables for all sensitive credentials
+- ✅ The publishable key (`pk_`) is safe to expose
+- ✅ Always verify webhook signatures in production
+- ✅ Use HTTPS in production (required for Apple Pay)
+- ✅ Implement origin verification to prevent unauthorized API access
+- ✅ Add rate limiting to prevent abuse
 
 ## License
 
